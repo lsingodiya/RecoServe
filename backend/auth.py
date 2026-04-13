@@ -19,9 +19,9 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 # MongoDB Configuration
-MONGO_URI = "mongodb+srv://raptbot:OAazPu0OQBNh3lnG@ipre-reco.mb5dhbb.mongodb.net/?appName=ipre-reco"
-DB_NAME = "ipre_reco_db"
-
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("DB_NAME", "ipre_reco_db")
+ 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
