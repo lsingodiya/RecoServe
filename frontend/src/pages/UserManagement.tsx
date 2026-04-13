@@ -25,7 +25,10 @@ export default function UserManagement() {
       const res = await fetch('http://127.0.0.1:8000/users', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      if (!res.ok) throw new Error('Failed to fetch users');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || 'Failed to fetch users');
+      }
       const data = await res.json();
       setUsers(data);
     } catch (err: any) {
@@ -48,7 +51,10 @@ export default function UserManagement() {
         },
         body: JSON.stringify(formUser),
       });
-      if (!res.ok) throw new Error('Failed to create user');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || 'Failed to create user');
+      }
       setShowCreateModal(false);
       setFormUser({ username: '', password: '', role: 'Standard', is_active: true });
       loadUsers();
@@ -72,7 +78,10 @@ export default function UserManagement() {
           is_active: formUser.is_active 
         }),
       });
-      if (!res.ok) throw new Error('Failed to update user');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || 'Failed to update user');
+      }
       setEditingUser(null);
       loadUsers();
     } catch (err: any) {
@@ -92,7 +101,10 @@ export default function UserManagement() {
         },
         body: JSON.stringify({ password: formPass }),
       });
-      if (!res.ok) throw new Error('Failed to change password');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || 'Failed to change password');
+      }
       setFormPass('');
       alert('Password updated successfully');
     } catch (err: any) {

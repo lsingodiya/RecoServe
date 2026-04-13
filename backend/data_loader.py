@@ -14,7 +14,7 @@ import random
 import string
 import json
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import pandas as pd
@@ -113,7 +113,7 @@ def load_data() -> None:
     logger.info("Building in-memory lookup …")
     _lookup = _build_lookup(df)
     _stats_cache = _compute_stats(df)
-    _last_refresh = datetime.utcnow()
+    _last_refresh = datetime.now(timezone.utc)
     logger.info(
         "Data ready — %d customers, %d total recommendations",
         len(_lookup),
@@ -160,7 +160,7 @@ def flush_feedback_to_s3() -> int:
 
     # 2. Convert local buffer to SageMaker format
     rows = []
-    now = datetime.utcnow().strftime("%Y-%m-%d")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     for cid, prods in _live_feedback.items():
         for pid, score in prods.items():
             # Map numeric sum to Pipeline Categories (High/Medium/Low)

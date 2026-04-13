@@ -73,8 +73,8 @@ export default function Pipeline() {
     try {
       const r = await refreshData();
       setRefreshMsg(`✅ ${r.message} — ${r.customers_loaded.toLocaleString()} customers loaded`);
-    } catch {
-      setRefreshMsg('❌ Data refresh failed');
+    } catch (e: any) {
+      setRefreshMsg(`❌ ${e?.response?.data?.detail ?? 'Data refresh failed'}`);
     } finally {
       setRefreshing(false);
     }

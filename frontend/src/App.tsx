@@ -58,18 +58,6 @@ export default function App() {
           </Routes>
         </div>
       </BrowserRouter>
-      <style>{`
-        .app-layout {
-          display: flex;
-          width: 100vw;
-          height: 100vh;
-        }
-        .page-content {
-          flex: 1;
-          overflow: auto;
-          padding: 24px;
-        }
-      `}</style>
     </AuthProvider>
   );
 }
