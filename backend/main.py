@@ -74,6 +74,7 @@ app = FastAPI(
     description="Sub-10ms in-memory recommendation lookup + pipeline control",
     version="1.0.0",
     lifespan=lifespan,
+    root_path="/api",
 )
 app.include_router(roles_router)
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")

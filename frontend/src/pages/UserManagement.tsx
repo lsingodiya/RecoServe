@@ -29,8 +29,8 @@ export default function UserManagement() {
       const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
       
       const [usersRes, rolesRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/users', { headers }),
-        fetch('http://127.0.0.1:8000/roles', { headers })
+        fetch('/api/users', { headers }),
+        fetch('/api/roles', { headers })
       ]);
 
       if (!usersRes.ok || !rolesRes.ok) throw new Error('Failed to fetch data');
@@ -56,7 +56,7 @@ export default function UserManagement() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://127.0.0.1:8000/users', {
+      const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ export default function UserManagement() {
     e.preventDefault();
     if (!editingUser) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/users/${editingUser.username}`, {
+      const res = await fetch(`/api/users/${editingUser.username}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ export default function UserManagement() {
     e.preventDefault();
     if (!editingUser) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/users/${editingUser.username}/password`, {
+      const res = await fetch(`/api/users/${editingUser.username}/password`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',

@@ -31,8 +31,8 @@ export default function RoleManagement() {
       const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
       
       const [rolesRes, permsRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/roles', { headers }),
-        fetch('http://127.0.0.1:8000/roles/permissions', { headers })
+        fetch('/api/roles', { headers }),
+        fetch('/api/roles/permissions', { headers })
       ]);
 
       if (!rolesRes.ok || !permsRes.ok) throw new Error('Failed to fetch roles or permissions');
@@ -54,7 +54,7 @@ export default function RoleManagement() {
   const handleCreateRole = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://127.0.0.1:8000/roles', {
+      const res = await fetch('/api/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(formRole),
@@ -70,7 +70,7 @@ export default function RoleManagement() {
     e.preventDefault();
     if (!editingRole) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/roles/${editingRole.name}`, {
+      const res = await fetch(`/api/roles/${editingRole.name}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(formRole),
@@ -85,7 +85,7 @@ export default function RoleManagement() {
   const handleDeleteRole = async (name: string) => {
     if (!confirm(`Delete role ${name}?`)) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/roles/${name}`, {
+      const res = await fetch(`/api/roles/${name}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
@@ -97,7 +97,7 @@ export default function RoleManagement() {
   const handleCreatePerm = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://127.0.0.1:8000/roles/permissions', {
+      const res = await fetch('/api/roles/permissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(formPerm),
@@ -112,7 +112,7 @@ export default function RoleManagement() {
   const handleDeletePerm = async (name: string) => {
     if (!confirm(`Delete permission ${name}?`)) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/roles/permissions/${name}`, {
+      const res = await fetch(`/api/roles/permissions/${name}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       });
