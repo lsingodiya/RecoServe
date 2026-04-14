@@ -7,7 +7,7 @@ import LoginPage from './pages/LoginPage';
 import UserManagement from './pages/UserManagement';
 import RoleManagement from './pages/RoleManagement';
 import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute, RoleProtectedRoute, PermissionProtectedRoute } from './components/Guards';
+import { ProtectedRoute, PermissionProtectedRoute } from './components/Guards';
 
 export default function App() {
   return (
