@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecoServe Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chat-container { height: calc(100vh - 160px); }
+        .message-bubble { max-width: 80%; word-wrap: break-word; }
+        .bot-message { background-color: #f3f4f6; color: #1f2937; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user-message { background-color: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="max-w-3xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden mt-10">
+        <!-- Header -->
+        <div class="bg-blue-600 p-4 text-white text-center font-bold text-xl shadow-md">
+            🤖 RecoServe Analytics Assistant
+        </div>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="chat-container p-4 overflow-y-auto flex flex-col gap-4">
+            <!-- Welcome Message -->
+            <div class="message-bubble bot-message p-3 rounded-lg shadow-sm">
+                Hello! I'm your product recommendation assistant. Ask me about top recommendations, summaries, or specific products/customers.
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t flex gap-2 bg-gray-50">
+            <input type="text" id="user-input" 
+                   class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                   placeholder="Ask me something... (e.g. 'Give me a summary')">
+            <button id="send-btn" 
+                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message-bubble p-3 rounded-lg shadow-sm ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            
+            // Handle potential multi-line responses (like tables)
+            if (text.includes('\\n') || text.includes('\n')) {
+                div.style.whiteSpace = 'pre-wrap';
+                div.style.fontFamily = 'monospace';
+            }
+            
+            div.textContent = text;
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const question = userInput.value.trim();
+            if (!question) return;
+
+            addMessage(question, 'user');
+            userInput.value = '';
+
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message-bubble bot-message p-3 rounded-lg shadow-sm loading-dots';
+            loadingDiv.textContent = 'Thinking';
+            chatWindow.appendChild(loadingDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch('http://127.0.0.1:9000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+                chatWindow.removeChild(loadingDiv);
+
+                if (data.status === 'success') {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage('Error: ' + (data.message || 'Something went wrong'), 'bot');
+                }
+            } catch (error) {
+                chatWindow.removeChild(loadingDiv);
+                addMessage('Error: Could not connect to the server. Make sure the backend is running on port 9000.', 'bot');
+                console.error(error);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
