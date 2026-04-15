@@ -6,6 +6,7 @@ import Pipeline from './pages/Pipeline';
 import LoginPage from './pages/LoginPage';
 import UserManagement from './pages/UserManagement';
 import RoleManagement from './pages/RoleManagement';
+import ChatBot from './components/ChatBot';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, PermissionProtectedRoute } from './components/Guards';
 
@@ -23,6 +24,7 @@ export default function App() {
                   <div className="app-layout">
                     <Sidebar />
                     <main className="page-content">
+                      <ChatBot />
                       <Routes>
                         <Route path="/"         element={<Dashboard />} />
                          <Route 

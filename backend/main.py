@@ -24,6 +24,7 @@ import data_loader
 import pipeline as pl
 from auth import RoleChecker, PermissionChecker, get_current_user, create_access_token, db, verify_password, get_password_hash, User, Token
 from roles import router as roles_router
+from chatBot.app import router as chatbot_router
 from models import (
     HealthResponse,
     PipelineStatusResponse,
@@ -77,6 +78,7 @@ app = FastAPI(
     root_path="/api",
 )
 app.include_router(roles_router)
+app.include_router(chatbot_router)
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -257,7 +259,7 @@ async def get_stats(
         quality_mix=stats["quality_mix"],
         segments=stats["segments"],
         feedback=stats["feedback"],
-        model_health=stats["model_health"],
+        diversity=stats["diversity"],
     )
 
 

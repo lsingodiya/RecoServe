@@ -50,11 +50,7 @@ class StatsResponse(BaseModel):
     quality_mix: dict               # {association, fallback}
     segments: List[str]
     feedback: Optional[dict]
-    health: dict = Field(alias="model_health")
-
-    model_config = {
-        "populate_by_name": True
-    }             # {avg_silhouette, cluster_distribution, status}
+    diversity: Optional[dict]       # {score: float, lorenz_curve: [{x, y}]}
 
 
 class PipelineStatusResponse(BaseModel):

@@ -3,7 +3,6 @@ import KPICard from '../components/KPICard';
 import CategoryBar from '../charts/CategoryBar';
 import CategoryPie from '../charts/CategoryPie';
 import QualityMixPie from '../charts/QualityMixPie';
-import ClusterDistBar from '../charts/ClusterDistBar';
 import DistributionHistogram from '../charts/DistributionHistogram';
 import Spinner from '../components/Spinner';
 import { fetchStats, type StatsResponse } from '../api/client';
@@ -85,31 +84,56 @@ export default function Dashboard() {
         <KPICard label="Last Refresh"          value={fmtDate(stats.last_refresh_time)}             icon="🕒" color="emerald" />
       </div>
 
-      {/* Row 1: Model Health & Quality Mix */}
-      <div className="charts-grid charts-grid-spacing">
-        <div className="glass-card" style={{ animationDelay: '100ms' }}>
-          <div className="card-header">
-            <div>
-              <div className="card-title">Model Health</div>
-              <div className="card-subtitle">Clustering density & stability</div>
-            </div>
-            <div className="model-health-badge">
-              Avg Sil: {stats.model_health?.avg_silhouette ?? 'N/A'}
-            </div>
-          </div>
-          <ClusterDistBar data={stats.model_health?.cluster_distribution ?? {}} />
-        </div>
+       {/* Row 1: Diversity & Quality Mix */}
+       <div className="charts-grid charts-grid-spacing">
+         <div className="glass-card" style={{ animationDelay: '100ms' }}>
+           <div className="card-header">
+             <div>
+               <div className="card-title">Recommendation Diversity</div>
+               <div className="card-subtitle">Product concentration & coverage</div>
+             </div>
+             <div className="model-health-badge">
+               Score: {stats.diversity?.score ?? 'N/A'}
+             </div>
+           </div>
+           <div style={{ height: 280, position: 'relative', padding: '20px' }}>
+             <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+               {/* Grid Lines */}
+               <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
+               <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
+               
+               {/* Equality Line (Diagonal) */}
+               <line x1="0" y1="100" x2="100" y2="0" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
+               
+               {/* Lorenz Curve */}
+               {stats.diversity?.lorenz_curve && stats.diversity.lorenz_curve.length > 0 && (
+                 <polyline
+                   points={stats.diversity.lorenz_curve.map(p => `${p.x * 100},${100 - p.y * 100}`).join(' ')}
+                   fill="none"
+                   stroke="#a78bfa"
+                   strokeWidth="3"
+                   strokeLinejoin="round"
+                   strokeLinecap="round"
+                 />
+               )}
+               
+               <text x="50" y="110" textAnchor="middle" fontSize="8" fill="#64748b">Cumulative % of Products</text>
+               <text x="-55" y="50" textAnchor="middle" fontSize="8" fill="#64748b" transform="rotate(-90, -55, 50)">Cumulative % of Recs</text>
+             </svg>
+           </div>
+         </div>
+ 
+         <div className="glass-card" style={{ animationDelay: '150ms' }}>
+           <div className="card-header">
+             <div>
+               <div className="card-title">Quality Mix</div>
+               <div className="card-subtitle">Association vs Fallback ratio</div>
+             </div>
+           </div>
+           <QualityMixPie data={stats.quality_mix ?? { association: 0, fallback: 0 }} />
+         </div>
+       </div>
 
-        <div className="glass-card" style={{ animationDelay: '150ms' }}>
-          <div className="card-header">
-            <div>
-              <div className="card-title">Quality Mix</div>
-              <div className="card-subtitle">Association vs Fallback ratio</div>
-            </div>
-          </div>
-          <QualityMixPie data={stats.quality_mix ?? { association: 0, fallback: 0 }} />
-        </div>
-      </div>
 
       {/* Row 2: Category Analysis */}
       <div className="charts-grid charts-grid-spacing">

@@ -69,11 +69,10 @@ export interface StatsResponse {
   quality_mix: { association: number; fallback: number };
   segments: string[];
   feedback: any;
-  model_health: {
-    avg_silhouette: number;
-    cluster_distribution: Record<string, number>;
-    status: string;
-  };
+  diversity: {
+    score: number;
+    lorenz_curve: { x: number; y: number }[];
+  } | null;
 }
 
 
@@ -140,4 +139,4 @@ export const submitFeedback = (customerId: string, productId: string, feedback: 
   api.post<FeedbackResponse>(`/recommendations/${customerId}/${productId}/feedback`, feedback).then(r => r.data);
 
 export const sendChatMessage = (message: string): Promise<ChatResponse> =>
-  api.post<ChatResponse>('/chat-bot/chat', { message }).then(r => r.data);
+  api.post<ChatResponse>('/chat-bot/chat', { question: message }).then(r => r.data);

@@ -24,9 +24,10 @@ from models import CategoryStat, RecommendationItem
 logger = logging.getLogger(__name__)
 
 # ── In-memory state ──────────────────────────────────────────────────────────
-
+_df: Optional[pd.DataFrame] = None
 _lookup: Dict[str, List[dict]] = {}
 _stats_cache: dict = {}
+
 _last_refresh: Optional[datetime] = None
 _live_feedback: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
 _historical_feedback: set[tuple[str, str]] = set()
@@ -59,6 +60,11 @@ def get_stats() -> dict:
 
 def get_last_refresh() -> Optional[datetime]:
     return _last_refresh
+
+
+def get_raw_df() -> Optional[pd.DataFrame]:
+    """Returns the raw DataFrame used for analytics/chatbot."""
+    return _df
 
 
 def customers_in_memory() -> int:
@@ -145,6 +151,9 @@ def load_data() -> None:
     else:
         logger.info("Loading data from S3 …")
         df = _load_from_s3()
+    
+    global _df
+    _df = df
     
     logger.info("Building in-memory lookup …")
     _lookup = _build_lookup(df)
@@ -388,31 +397,29 @@ def _compute_stats(df: pd.DataFrame) -> dict:
             current_rate = overall.get("acceptance_rate", 0.0)
             overall["acceptance_rate"] = (current_rate * 0.7) + (max(0, live_acceptance) * 0.3)
 
-    # Data-driven Model Health
-    # Compute actual distribution from cluster_id if available
-    if "cluster_id" in df.columns:
-        cluster_counts = df["cluster_id"].value_counts().to_dict()
-        # Simplify keys to just the ID part if they are like "Electronics_General_1"
-        simplified_dist = {}
-        for cid, count in cluster_counts.items():
-            key = cid.split("_")[-1] if "_" in cid else cid
-            simplified_dist[key] = simplified_dist.get(key, 0) + count
-        cluster_dist = simplified_dist
-    else:
-        cluster_dist = {"N/A": len(df)}
-
-    # Simulate silhouette score based on number of clusters (more clusters -> slightly lower silhouette usually)
-    num_clusters = len(cluster_dist)
-    base_sil = 0.35
-    # Small variance based on dataset size to make it look "calculated"
-    variance = (len(df) % 100) / 1000.0 
-    avg_sil = round(base_sil + variance - (num_clusters * 0.001), 3)
-
-    model_health = {
-        "avg_silhouette": avg_sil,
-        "cluster_distribution": cluster_dist,
-        "status": "Healthy" if avg_sil > 0.2 else "Warning"
-    }
+    # Diversity Analysis (Gini Coefficient)
+    diversity_data = {"score": 0.0, "lorenz_curve": []}
+    if not df.empty and "product_id" in df.columns:
+        import numpy as np
+        counts = df["product_id"].value_counts().sort_values().values
+        n = len(counts)
+        if n > 0:
+            # Gini Coefficient: 0 = perfect equality (diverse), 1 = perfect inequality
+            mean_count = np.mean(counts)
+            if mean_count > 0:
+                gini = np.sum(np.abs(counts[:, None] - counts)) / (2 * n**2 * mean_count)
+                # Diversity Score = 1 - Gini (1.0 = perfectly diverse, 0.0 = concentrated)
+                diversity_data["score"] = round(1.0 - gini, 3)
+            
+            # Lorenz Curve for visualization
+            cum_counts = np.cumsum(counts)
+            total_recs = np.sum(counts)
+            cum_pct = cum_counts / total_recs
+            x_axis = np.arange(1, n + 1) / n
+            diversity_data["lorenz_curve"] = [
+                {"x": round(float(x), 3), "y": round(float(y), 3)} 
+                for x, y in zip(x_axis, cum_pct)
+            ]
 
     return {
         "customers_covered": customers,
@@ -429,8 +436,9 @@ def _compute_stats(df: pd.DataFrame) -> dict:
         },
         "segments": segments,
         "feedback": feedback,
-        "model_health": model_health,
+        "diversity": diversity_data,
     }
+
 
 def _histogram(series: pd.Series, bins: int):
 
