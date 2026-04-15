@@ -100,6 +100,12 @@ export interface HealthResponse {
   last_refresh_time: string | null;
 }
 
+export interface ChatResponse {
+  status: 'success' | 'error';
+  response?: string;
+  message?: string;
+}
+
 export interface FeedbackRequest {
   rating: number;
   comment?: string;
@@ -132,3 +138,6 @@ export const fetchHealth = (): Promise<HealthResponse> =>
 
 export const submitFeedback = (customerId: string, productId: string, feedback: FeedbackRequest): Promise<FeedbackResponse> =>
   api.post<FeedbackResponse>(`/recommendations/${customerId}/${productId}/feedback`, feedback).then(r => r.data);
+
+export const sendChatMessage = (message: string): Promise<ChatResponse> =>
+  api.post<ChatResponse>('/chat-bot/chat', { message }).then(r => r.data);

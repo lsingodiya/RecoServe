@@ -37,9 +37,10 @@ const ChatBot: React.FC = () => {
 
     try {
       const response: ChatResponse = await sendChatMessage(input);
-      if (response.status === 'success') {
-        setMessages(prev => [...prev, { text: response.response, sender: 'bot', timestamp: new Date() }]);
-      } else {
+       if (response.status === 'success') {
+         setMessages(prev => [...prev, { text: response.response || 'No response from bot.', sender: 'bot', timestamp: new Date() }]);
+       } else {
+
         setMessages(prev => [...prev, { text: response.message || 'Sorry, something went wrong.', sender: 'bot', timestamp: new Date() }]);
       }
     } catch (error) {
