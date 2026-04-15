@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Recommendation Serving API",
+    title="IPRE-Reco Serving API",
     description="Sub-10ms in-memory recommendation lookup + pipeline control",
     version="1.0.0",
     lifespan=lifespan,

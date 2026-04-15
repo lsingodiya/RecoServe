@@ -24,9 +24,11 @@ export default function Sidebar() {
     <nav className="sidebar">
 
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">⚡</div>
+        <div className="sidebar-logo-icon">
+          <img src="https://raptbot.com/static/Raptbot%20logo-4126ccc4c32495aa61af8533893d8ca2.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
         <div>
-          <div className="sidebar-logo-text">RecoServe</div>
+          <div className="sidebar-logo-text">IPRE-Reco</div>
           <div className="sidebar-logo-sub">Recommendation Platform</div>
         </div>
       </div>
