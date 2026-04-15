@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { fetchHealth } from '../api/client';
 import { PermissionGuard } from './Guards';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,11 +12,6 @@ const navItems = [
 
 export default function Sidebar() {
   const { logout } = useAuth();
-  const [mockMode, setMockMode] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetchHealth().then(h => setMockMode(h.mock_mode)).catch(() => setMockMode(null));
-  }, []);
 
   return (
     <nav className="sidebar">
@@ -49,26 +42,23 @@ export default function Sidebar() {
       ))}
 
        <div className="sidebar-footer">
-          <button 
-            onClick={logout} 
-            className="nav-item" 
-            style={{ 
-              width: '100%', textAlign: 'left', cursor: 'pointer', 
-              border: 'none', background: 'none', fontSize: 'inherit', 
-              fontFamily: 'inherit', color: 'inherit', display: 'flex', 
-              alignItems: 'center', gap: '12px', marginBottom: '16px' 
-            }}
-          >
-            <span className="nav-icon">🚪</span>
-            Logout
-          </button>
+            <button 
+              onClick={logout} 
+              className="nav-item" 
+              style={{ 
+                width: '100%', border: 'none', background: 'none', 
+                fontSize: 'inherit', fontFamily: 'inherit', color: 'inherit', 
+                cursor: 'pointer', display: 'flex', alignItems: 'center', 
+                gap: '10px', marginBottom: '16px' 
+              }}
+            >
+              <span className="nav-icon">🚪</span>
+              Logout
+            </button>
 
-          {mockMode !== null && (
-            <div className="sidebar-badge">
-              <span>{mockMode ? '🟢' : '🔵'}</span>
-              <span>{mockMode ? 'Mock Mode Active' : 'Production Mode'}</span>
-            </div>
-          )}
+
+
+
         </div>
 
     </nav>

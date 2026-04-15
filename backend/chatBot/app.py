@@ -57,6 +57,8 @@ DIRECT_RESPONSE_INTENTS = {
     "customer_recommendation",
     "multi_customer_recommendation",
     "product_frequency",
+    "top_recommendations",
+    "best_product",
 }
  
  
@@ -66,9 +68,10 @@ DIRECT_RESPONSE_INTENTS = {
 def parse_user_query(question: str) -> Dict[str, Any]:
     prompt = f"""
 Classify the user query into one of the supported intents.
+If the user specifies a number of results (e.g., "top 20", "first 5"), extract that as "limit". Default is 10.
  
 Supported intents:
-- top_recommendations       → user wants top/best recommendations by lift or confidence
+- top_recommendations       → user wants a LIST of the top/best recommendations by lift or confidence
 - best_product              → user wants the most frequently recommended product(s)
 - product_recommendation    → user asks what to recommend when a customer buys a specific product
 - customer_recommendation   → user asks for recommendations for ONE specific customer ID
@@ -78,17 +81,29 @@ Supported intents:
 - count_customers           → user wants to know how many unique customers exist
 - regions                   → user wants to see segments, clusters, or regional breakdown
 - categories                → user wants to see product categories (L2/L3)
-- summary                   → user wants a full dataset overview or summary
+- summary                   → user wants a full dataset overview, general metrics, or summary (e.g., "avg lift", "total rows")
  
 Return ONLY a JSON object. No explanation. No markdown.
  
 Examples:
  
+User: top 20 recommendations
+{{"intent": "top_recommendations", "limit": 20}}
+ 
+User: best 5 products
+{{"intent": "best_product", "limit": 5}}
+ 
+User: what is the average lift
+{{"intent": "summary"}}
+ 
+User: avg lift
+{{"intent": "summary"}}
+ 
 User: top recommendations
-{{"intent": "top_recommendations"}}
+{{"intent": "top_recommendations", "limit": 10}}
  
 User: best product
-{{"intent": "best_product"}}
+{{"intent": "best_product", "limit": 10}}
  
 User: how many products are there
 {{"intent": "count_products"}}

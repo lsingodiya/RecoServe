@@ -22,6 +22,8 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
     # ===============================
     # AGGREGATION (FULL DATA)
     # ===============================
+    
+    limit = parsed_query.get("limit", 10)
 
     if intent == "count_products":
         total = df_clean["recommended_product"].nunique()
@@ -104,13 +106,13 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
     elif intent == "top_recommendations":
         result = df_clean_conf.sort_values(
             by=["lift", "confidence"], ascending=False
-        ).head(10).copy()
+        ).head(limit).copy()
 
         result["rank"] = range(1, len(result) + 1)
         
-        avg_lift_top_10 = round(result["lift"].mean(), 2) if not result.empty and "lift" in result.columns else "N/A"
+        avg_lift_top = round(result["lift"].mean(), 2) if not result.empty and "lift" in result.columns else "N/A"
         
-        header = f"Top 10 Recommendations (Avg Lift: {avg_lift_top_10})\n"
+        header = f"Top {len(result)} Recommendations (Avg Lift: {avg_lift_top})\n"
         table = result[
             ["rank", "trigger_product", "recommended_product", "confidence", "lift", "segment"]
         ].to_string(index=False)
@@ -126,7 +128,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
         )
         result.columns = ["product", "recommendation_count"]
         result["share"] = (result["recommendation_count"] / total_recs * 100).round(2).astype(str) + "%"
-        return result.head(5).to_string(index=False)
+        return result.head(limit).to_string(index=False)
 
     elif intent == "product_recommendation":
         if not product:
