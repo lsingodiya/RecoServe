@@ -21,6 +21,7 @@
     "@nivo/line": "^0.99.0",
     "@nivo/pie": "^0.99.0",
     "axios": "^1.15.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.0"
   }
 }
