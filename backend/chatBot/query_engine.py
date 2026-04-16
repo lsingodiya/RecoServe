@@ -41,7 +41,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
         if not cols:
             return "No region data available."
         regions = df_clean[cols].drop_duplicates().sort_values(cols)
-        return regions.to_string(index=False)
+        return regions.to_markdown(index=False)
 
     elif intent == "categories":
         if "l2_category" not in df_clean.columns:
@@ -62,7 +62,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
         shares["Share"] = (shares["Share"] * 100).round(2).astype(str) + "%"
         
         merged = cat_mapL2.merge(shares, on="L2 Category")
-        return merged.to_string(index=False)
+        return merged.to_markdown(index=False)
 
 
     elif intent == "summary":
@@ -115,7 +115,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
         header = f"Top {len(result)} Recommendations (Avg Lift: {avg_lift_top})\n"
         table = result[
             ["rank", "trigger_product", "recommended_product", "confidence", "lift", "segment"]
-        ].to_string(index=False)
+        ].to_markdown(index=False)
         
         return header + table
 
@@ -126,9 +126,9 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
             .value_counts()
             .reset_index()
         )
-        result.columns = ["product", "recommendation_count"]
-        result["share"] = (result["recommendation_count"] / total_recs * 100).round(2).astype(str) + "%"
-        return result.head(limit).to_string(index=False)
+        result.columns = ["product", "count"]
+        result["share"] = (result["count"] / total_recs * 100).round(2).astype(str) + "%"
+        return result.head(limit).to_markdown(index=False)
 
     elif intent == "product_recommendation":
         if not product:
@@ -153,7 +153,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
 
         return result[
             ["trigger_product", "recommended_product", "l2_category", "l3_category", "confidence", "lift"]
-        ].to_string(index=False)
+        ].to_markdown(index=False)
 
     elif intent == "customer_recommendation":
         if not customer:
@@ -169,7 +169,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
         seg = result.iloc[0]["segment"] if "segment" in result.columns else ""
         return (
             f"Recommendations for {customer.upper()} [{seg}]\n\n"
-            + result[["rank", "recommended_product", "l3_category", "score", "reason"]].to_string(index=False)
+            + result[["rank", "recommended_product", "l3_category", "score", "reason"]].to_markdown(index=False)
         )
 
     elif intent == "multi_customer_recommendation":
@@ -189,7 +189,7 @@ def execute_query(df: pd.DataFrame, parsed_query: Dict[str, Any]) -> Optional[st
             seg = result.iloc[0]["segment"] if "segment" in result.columns else ""
             block = (
                 f"Recommendations for {cid.upper()} [{seg}]\n"
-                + result[["rank", "recommended_product", "l3_category", "score", "reason"]].to_string(index=False)
+                + result[["rank", "recommended_product", "l3_category", "score", "reason"]].to_markdown(index=False)
             )
             output_parts.append(block)
 
