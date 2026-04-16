@@ -31,6 +31,7 @@ jobs:
             echo "AWS_REGION=${{ secrets.AWS_REGION }}" > .env
             echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
             echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "MODEL_ID=${{ secrets.MODEL_ID }}" >> .env
             echo "S3_BUCKET=${{ secrets.S3_BUCKET }}" >> .env
             echo "S3_KEY=${{ secrets.S3_KEY }}" >> .env
