@@ -22,25 +22,33 @@ function fmtDate(iso: string | null): string {
 export default function Dashboard() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedSegment, setSelectedSegment] = useState<string>('All');
+  // initialError: shown as full-page block when the very first load fails
+  const [initialError, setInitialError] = useState('');
+  // refreshError: shown as a slim banner when a background 30s refresh fails
+  // so charts from the previous successful load remain visible.
+  const [refreshError, setRefreshError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const load = async () => {
+  const load = async (isInitial = false) => {
     try {
-      setError('');
+      setRefreshError('');
+      if (isInitial) setInitialError('');
       const data = await fetchStats();
       setStats(data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load stats. Is the backend running?');
+      const msg = (err as any).response?.data?.detail || 'Failed to load stats. Is the backend running?';
+      if (isInitial) setInitialError(msg);
+      else setRefreshError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { 
-    load(); 
-    const id = setInterval(load, 30_000); 
-    return () => clearInterval(id); 
+  useEffect(() => {
+    load(true);
+    const id = setInterval(() => load(false), 30_000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return (
@@ -49,29 +57,52 @@ export default function Dashboard() {
     </div>
   );
 
-  if (error) return <div className="error-msg">{error}</div>;
+  // Full-page error only on initial load failure
+  if (initialError) return <div className="error-msg">{initialError}</div>;
   if (!stats) return null;
 
-  const filteredTopProducts = selectedSegment === 'All' 
-    ? (stats.top_products ?? []) 
-    : (stats.top_products ?? []).filter(p => selectedSegment.startsWith(p.category ?? ''));
+  // Filter by l2 category — stats.categories contains the same names as top_products[].category.
+  const filteredTopProducts = selectedCategory === 'All'
+    ? (stats.top_products ?? [])
+    : (stats.top_products ?? []).filter(p => p.category === selectedCategory);
+
+  // Max score in the visible set — used to make the score bar relative,
+  // so bars show actual differences rather than bunching at 50–99%.
+  const maxScore = filteredTopProducts.reduce((m, p) => Math.max(m, p.avg_score), 0) || 1;
 
   return (
     <div>
+      {/* Background refresh failure — shows as a slim banner without hiding charts */}
+      {refreshError && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '8px 16px', marginBottom: 12, borderRadius: 8,
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+          fontSize: 13, color: '#dc2626',
+        }}>
+          <span>⚠️ Auto-refresh failed: {refreshError}</span>
+          <button
+            onClick={() => setRefreshError('')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16, lineHeight: 1 }}
+          >×</button>
+        </div>
+      )}
+
       <div className="page-header dashboard-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
           <p className="page-subtitle">Real-time recommendation analytics — auto-refreshes every 30s</p>
         </div>
         <div className="dashboard-segment-ctrl">
-          <span className="dashboard-segment-label">Segment:</span>
-          <select 
-            value={selectedSegment} 
-            onChange={(e) => setSelectedSegment(e.target.value)}
+          <span className="dashboard-segment-label">Category:</span>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
             className="dashboard-segment-select"
           >
-            <option value="All">All Segments</option>
-            {stats.segments?.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="All">All Categories</option>
+            {/* stats.categories are flat l2 names that match top_products[].category */}
+            {(stats.categories ?? []).map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
@@ -96,15 +127,16 @@ export default function Dashboard() {
                Score: {stats.diversity?.score ?? 'N/A'}
              </div>
            </div>
+           {/* Lorenz Curve — wider viewBox gives room for the rotated Y-axis label */}
            <div style={{ height: 280, position: 'relative', padding: '20px' }}>
-             <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-               {/* Grid Lines */}
-               <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
-               <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(0,0,0,0.05)" strokeWidth="0.5" />
-               
-               {/* Equality Line (Diagonal) */}
+             <svg viewBox="-20 -10 130 130" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+               {/* Axes */}
+               <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5" />
+               <line x1="0" y1="100" x2="100" y2="100" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5" />
+
+               {/* Equality line (perfect diversity diagonal) */}
                <line x1="0" y1="100" x2="100" y2="0" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="4" />
-               
+
                {/* Lorenz Curve */}
                {stats.diversity?.lorenz_curve && stats.diversity.lorenz_curve.length > 0 && (
                  <polyline
@@ -116,9 +148,16 @@ export default function Dashboard() {
                    strokeLinecap="round"
                  />
                )}
-               
-               <text x="50" y="110" textAnchor="middle" fontSize="8" fill="#64748b">Cumulative % of Products</text>
-               <text x="-55" y="50" textAnchor="middle" fontSize="8" fill="#64748b" transform="rotate(-90, -55, 50)">Cumulative % of Recs</text>
+
+               {/* Axis labels — positioned within the wider viewBox */}
+               <text x="50" y="115" textAnchor="middle" fontSize="7" fill="#64748b">Cumulative % of Products</text>
+               <text
+                 x="0" y="50"
+                 textAnchor="middle"
+                 fontSize="7"
+                 fill="#64748b"
+                 transform="rotate(-90, -12, 50)"
+               >Cumulative % of Recs</text>
              </svg>
            </div>
          </div>
@@ -251,8 +290,11 @@ export default function Dashboard() {
                   <td>
                     <div className="table-score-container">
                       <div className="table-score-bar-bg">
-                        <div style={{ 
-                          width: `${(p.avg_score * 100)}%`, height: '100%', background: 'var(--primary-light)', borderRadius: 3 
+                        <div style={{
+                          // Width is relative to the max score in the visible set
+                          // so differences between products are actually visible.
+                          width: `${(p.avg_score / maxScore) * 100}%`,
+                          height: '100%', background: 'var(--primary-light)', borderRadius: 3
                         }} />
                       </div>
                       <span className="table-score-pill">

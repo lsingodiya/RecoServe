@@ -155,36 +155,50 @@ export default function Lookup() {
                     conf {rec.confidence.toFixed(2)}
                   </span>
                   <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center' }}>
-                    {rec.has_feedback && (
-                      <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600, marginRight: 8, animation: 'fadeIn 0.3s ease' }}>
+                    {/* Once feedback is given, hide buttons and show a badge instead */}
+                    {(rec.has_feedback || feedbackStatus[rec.product_id] === 'saved') ? (
+                      <span style={{
+                        fontSize: 11, color: 'var(--success)', fontWeight: 600,
+                        padding: '3px 8px', borderRadius: 4,
+                        background: 'rgba(16,185,129,0.08)',
+                        border: '1px solid rgba(16,185,129,0.2)',
+                        animation: 'fadeIn 0.3s ease',
+                      }}>
                         ✓ Feedback Given
                       </span>
+                    ) : (
+                      <>
+                        {feedbackStatus[rec.product_id] === 'saving' && (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Saving…</span>
+                        )}
+                        <button
+                          onClick={() => handleRate(rec.product_id, 1)}
+                          disabled={feedbackStatus[rec.product_id] === 'saving'}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontSize: 14, padding: 2,
+                            opacity: feedbackStatus[rec.product_id] === 'saving' ? 0.4 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
+                          title="Like this recommendation"
+                        >
+                          👍
+                        </button>
+                        <button
+                          onClick={() => handleRate(rec.product_id, -1)}
+                          disabled={feedbackStatus[rec.product_id] === 'saving'}
+                          style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontSize: 14, padding: 2,
+                            opacity: feedbackStatus[rec.product_id] === 'saving' ? 0.4 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
+                          title="Dislike this recommendation"
+                        >
+                          👎
+                        </button>
+                      </>
                     )}
-                    {feedbackStatus[rec.product_id] === 'saved' && (
-                      <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600, marginRight: 8, animation: 'fadeIn 0.3s ease' }}>
-                        ✓ Saved
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleRate(rec.product_id, 1)}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2,
-                        opacity: (feedbackStatus[rec.product_id] === 'saving' || rec.has_feedback) ? 0.5 : 1
-                      }}
-                      title="Like"
-                    >
-                      👍
-                    </button>
-                    <button
-                      onClick={() => handleRate(rec.product_id, -1)}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2,
-                        opacity: (feedbackStatus[rec.product_id] === 'saving' || rec.has_feedback) ? 0.5 : 1
-                      }}
-                      title="Dislike"
-                    >
-                      👎
-                    </button>
                   </div>
 
                 </div>

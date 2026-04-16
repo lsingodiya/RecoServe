@@ -13,6 +13,15 @@ const theme = {
 };
 
 export default function DistributionHistogram({ data, color = '#a78bfa', label = 'Count' }: Props) {
+  // Guard: nothing to render
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 13 }}>
+        No distribution data available
+      </div>
+    );
+  }
+
   const formatted = data.map(d => ({ bucket: d.bucket, [label]: d.count }));
 
   return (
@@ -21,11 +30,17 @@ export default function DistributionHistogram({ data, color = '#a78bfa', label =
         data={formatted}
         keys={[label]}
         indexBy="bucket"
-        margin={{ top: 10, right: 10, bottom: 65, left: 48 }}
+        // Extra bottom margin to prevent long bucket labels (e.g. "1.00–2.50")
+        // from clipping into the chart area at -40° rotation.
+        margin={{ top: 10, right: 10, bottom: 80, left: 48 }}
         padding={0.15}
         colors={[color]}
         borderRadius={3}
-        axisBottom={{ tickRotation: -40, tickSize: 0 }}
+        axisBottom={{
+          tickRotation: -40,
+          tickSize: 0,
+          tickPadding: 6,
+        }}
         axisLeft={{ tickSize: 0, tickPadding: 8 }}
         enableLabel={false}
         enableGridX={false}

@@ -389,13 +389,17 @@ def _compute_stats(df: pd.DataFrame) -> dict:
     # Integrate live feedback into stats
     if feedback:
         overall = feedback.get("overall", {})
-        # Adjust overall acceptance rate based on live feedback
         total_live_votes = sum(sum(prod_votes.values()) for prod_votes in _live_feedback.values())
-        if total_live_votes != 0:
-            live_acceptance = sum(sum(prod_votes.values()) for prod_votes in _live_feedback.values()) / abs(total_live_votes)
-            # Simple blending: 70% static, 30% live
+        if total_live_votes > 0:
+            # Count only positive votes (rating > 0) as accepted
+            positive_votes = sum(
+                sum(v for v in prod_votes.values() if v > 0)
+                for prod_votes in _live_feedback.values()
+            )
+            live_acceptance = positive_votes / total_live_votes
+            # Blend: 70% historical, 30% live signal
             current_rate = overall.get("acceptance_rate", 0.0)
-            overall["acceptance_rate"] = (current_rate * 0.7) + (max(0, live_acceptance) * 0.3)
+            overall["acceptance_rate"] = round((current_rate * 0.7) + (live_acceptance * 0.3), 4)
 
     # Diversity Analysis (Gini Coefficient)
     diversity_data = {"score": 0.0, "lorenz_curve": []}
@@ -408,24 +412,33 @@ def _compute_stats(df: pd.DataFrame) -> dict:
             mean_count = np.mean(counts)
             if mean_count > 0:
                 gini = np.sum(np.abs(counts[:, None] - counts)) / (2 * n**2 * mean_count)
-                # Diversity Score = 1 - Gini (1.0 = perfectly diverse, 0.0 = concentrated)
-                diversity_data["score"] = round(1.0 - gini, 3)
-            
-            # Lorenz Curve for visualization
-            cum_counts = np.cumsum(counts)
-            total_recs = np.sum(counts)
-            cum_pct = cum_counts / total_recs
-            x_axis = np.arange(1, n + 1) / n
-            diversity_data["lorenz_curve"] = [
-                {"x": round(float(x), 3), "y": round(float(y), 3)} 
-                for x, y in zip(x_axis, cum_pct)
-            ]
+                diversity_data["score"] = round(1.0 - float(gini), 3)
+
+            # Lorenz Curve — use n_total to avoid shadowing `total_recs` (int)
+            # which would change its type to numpy.int64 and break JSON serialisation.
+            n_total = int(np.sum(counts))
+            if n_total > 0:
+                cum_counts = np.cumsum(counts)
+                cum_pct = cum_counts / n_total
+                x_axis = np.arange(1, n + 1) / n
+
+                # Downsample to max 200 points — with large catalogues
+                # (10k+ distinct products) sending every point bloats the response.
+                lorenz_full = list(zip(x_axis.tolist(), cum_pct.tolist()))
+                if len(lorenz_full) > 200:
+                    step = len(lorenz_full) // 200
+                    lorenz_full = lorenz_full[::step]
+
+                diversity_data["lorenz_curve"] = [
+                    {"x": round(float(x), 4), "y": round(float(y), 4)}
+                    for x, y in lorenz_full
+                ]
 
     return {
         "customers_covered": customers,
         "avg_recommendations_per_customer": avg_recs,
         "avg_lift": avg_lift,
-        "total_recommendations": total_recs,
+        "total_recommendations": total_recs,   # Python int — not shadowed
         "category_stats": cat_stats,
         "lift_distribution": lift_dist,
         "score_distribution": score_dist,
@@ -435,6 +448,9 @@ def _compute_stats(df: pd.DataFrame) -> dict:
             "fallback": fallback_recs,
         },
         "segments": segments,
+        # Flat list of l2 category names — used by the frontend table filter
+        # (top_products has a `category` field that matches these names).
+        "categories": [s["category"] for s in cat_stats],
         "feedback": feedback,
         "diversity": diversity_data,
     }

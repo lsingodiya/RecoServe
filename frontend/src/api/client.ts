@@ -18,12 +18,36 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || (error.response?.status === 403 && error.response.data?.detail?.includes('disabled'))) {
+    const httpStatus = error.response?.status;
+    const detail: string = error.response?.data?.detail ?? '';
+    const detailLower = detail.toLowerCase();
+
+    // 401 → token missing, expired, or invalid → force re-login
+    const isTokenInvalid = httpStatus === 401;
+
+    // 403 cases that require a forced re-login:
+    //  • "disabled"        → account deactivated by admin
+    //  • "role has changed" → role was renamed mid-session (JWT role no longer matches DB)
+    const isSessionBroken =
+      httpStatus === 403 &&
+      (detailLower.includes('disabled') || detailLower.includes('role has changed'));
+
+    if (isTokenInvalid || isSessionBroken) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
+      localStorage.removeItem('permissions');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+
+    // Plain 403 (permission denied) → do NOT logout.
+    // Fire a custom event so the app can silently refresh the user's
+    // current permissions from the DB in case they were changed by an admin.
+    if (httpStatus === 403) {
+      window.dispatchEvent(new CustomEvent('auth:permission-denied'));
+    }
+
     return Promise.reject(error);
   }
 );
@@ -67,7 +91,8 @@ export interface StatsResponse {
   score_distribution: { bucket: string; count: number }[];
   top_products: { product_id: string; count: number; avg_score: number; avg_lift: number; avg_conf: number; category: string }[];
   quality_mix: { association: number; fallback: number };
-  segments: string[];
+  segments: string[];    // composite e.g. "Electronics_General"
+  categories: string[];  // flat l2 names matching top_products[].category
   feedback: any;
   diversity: {
     score: number;

@@ -47,9 +47,27 @@ TOP_N_DEFAULT = int(os.getenv("TOP_N_DEFAULT", "10"))
 PIPELINE_NAME = os.getenv("SAGEMAKER_PIPELINE_NAME", "mock-pipeline")
 
 
-# ── App State ──────────────────────────────────────────────────────────────────
+# ── Startup Validation ───────────────────────────────────────────────────────
+# Fail fast if critical env vars are missing rather than getting cryptic errors later.
+_missing = [v for v in ("SECRET_KEY", "MONGO_URI") if not os.getenv(v)]
+if _missing:
+    raise RuntimeError(
+        f"Missing required environment variable(s): {', '.join(_missing)}. "
+        "Please set them in your .env file before starting the server."
+    )
 
+_secret = os.getenv("SECRET_KEY", "")
+if len(_secret) < 32:
+    import warnings
+    warnings.warn(
+        "SECRET_KEY is shorter than 32 characters — JWTs can be brute-forced. "
+        "Run: python -c \"import secrets; print(secrets.token_hex(32))\" to generate a secure key.",
+        stacklevel=1,
+    )
+
+# ── App State ────────────────────────────────────────────────────────────────
 _startup_error: Optional[str] = None
+
 
 
 @asynccontextmanager
@@ -82,7 +100,8 @@ app.include_router(chatbot_router)
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,       # uses env var — was hardcoded ["*"]
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -158,7 +177,7 @@ async def update_user(username: str, req: UserUpdate, _ = Depends(PermissionChec
         raise HTTPException(status_code=400, detail="No update data provided")
         
     result = await db.users.update_one({"username": username}, {"$set": update_data})
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"success": True, "message": f"User {username} updated"}
 
@@ -166,7 +185,7 @@ async def update_user(username: str, req: UserUpdate, _ = Depends(PermissionChec
 async def change_password(username: str, req: PasswordUpdate, _ = Depends(PermissionChecker("user_manage"))):
     hashed = get_password_hash(req.password)
     result = await db.users.update_one({"username": username}, {"$set": {"password": hashed}})
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     return {"success": True, "message": f"Password for {username} updated"}
 
@@ -258,6 +277,7 @@ async def get_stats(
         top_products=stats["top_products"],
         quality_mix=stats["quality_mix"],
         segments=stats["segments"],
+        categories=stats.get("categories", []),   # flat l2 names for frontend filter
         feedback=stats["feedback"],
         diversity=stats["diversity"],
     )

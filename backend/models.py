@@ -46,9 +46,10 @@ class StatsResponse(BaseModel):
     category_stats: List[CategoryStat]
     lift_distribution: List[dict]   # [{bucket, count}]
     score_distribution: List[dict]  # [{bucket, count}]
-    top_products: List[dict]        # [{product_id, count, avg_score}]
+    top_products: List[dict]        # [{product_id, count, avg_score, ...}]
     quality_mix: dict               # {association, fallback}
-    segments: List[str]
+    segments: List[str]             # composite segment strings (e.g. "Electronics_General")
+    categories: List[str]           # flat l2 category names — used for top-products filter
     feedback: Optional[dict]
     diversity: Optional[dict]       # {score: float, lorenz_curve: [{x, y}]}
 
